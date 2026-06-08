@@ -18,7 +18,6 @@ pub struct BookManager {
     pub books: Vec<BookInfo>,
     scan_directory: String,
     pub library_mode: LibraryMode,
-    #[cfg(feature = "pdf")]
     pub supports_graphics: bool,
 }
 
@@ -73,7 +72,6 @@ impl BookManager {
             books,
             scan_directory,
             library_mode,
-            #[cfg(feature = "pdf")]
             supports_graphics: false,
         }
     }
