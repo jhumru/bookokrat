@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/add-windows-build
+      - feat/add-windows-build-with-pdf
   workflow_dispatch:
 
 permissions:
