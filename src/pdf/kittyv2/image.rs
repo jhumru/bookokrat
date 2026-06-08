@@ -194,16 +194,19 @@ mod tests {
         )
     }
 
+    #[cfg(unix)]
     struct ShmCleanup {
         path: String,
     }
 
+    #[cfg(unix)]
     impl ShmCleanup {
         fn new(path: String) -> Self {
             Self { path }
         }
     }
 
+    #[cfg(unix)]
     impl Drop for ShmCleanup {
         fn drop(&mut self) {
             if let Ok(c_path) = CString::new(self.path.as_str()) {
@@ -214,6 +217,7 @@ mod tests {
         }
     }
 
+    #[cfg(unix)]
     fn shm_exists(path: &str) -> bool {
         let Ok(c_path) = CString::new(path) else {
             return false;
@@ -230,6 +234,7 @@ mod tests {
         true
     }
 
+    #[cfg(unix)]
     #[test]
     fn queued_image_drop_unlinks_shm() {
         let path = unique_shm_path("queued-drop");
@@ -252,6 +257,7 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
     #[test]
     fn handed_off_lease_keeps_shm_until_tracker_unlinks() {
         let path = unique_shm_path("handoff");

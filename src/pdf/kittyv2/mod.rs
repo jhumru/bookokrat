@@ -17,6 +17,7 @@ use std::time::{Duration, Instant};
 
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use ratatui::layout::Position;
+#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
 static IS_TMUX: OnceLock<bool> = OnceLock::new();
@@ -529,6 +530,7 @@ fn display_and_check(stdout: &mut io::Stdout, id: u32, timeout: Duration) -> boo
     }
 }
 
+#[cfg(unix)]
 fn read_response_with_timeout(timeout: Duration) -> io::Result<Option<kgfx::Response>> {
     let mut stdin = io::stdin();
     let fd = stdin.as_raw_fd();
@@ -568,4 +570,9 @@ fn read_response_with_timeout(timeout: Duration) -> io::Result<Option<kgfx::Resp
             return Ok(Some(response));
         }
     }
+}
+
+#[cfg(not(unix))]
+fn read_response_with_timeout(_timeout: Duration) -> io::Result<Option<kgfx::Response>> {
+    Ok(None)
 }

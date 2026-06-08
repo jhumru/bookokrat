@@ -41,6 +41,7 @@ impl ShmLease {
     }
 }
 
+#[cfg(unix)]
 impl Drop for ShmLease {
     fn drop(&mut self) {
         if !self.cleanup_on_drop || self.path.is_empty() {
@@ -62,5 +63,12 @@ impl Drop for ShmLease {
         } else {
             record_shm_unlink_error();
         }
+    }
+}
+
+#[cfg(not(unix))]
+impl Drop for ShmLease {
+    fn drop(&mut self) {
+        // No-op: shared memory not supported on this platform
     }
 }

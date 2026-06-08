@@ -11,7 +11,7 @@
 //! - Everything else gets parsed as keyboard/mouse events
 
 use std::collections::VecDeque;
-use std::io;
+use std::io::{self, Read};
 use std::time::{Duration, Instant};
 
 use crossterm::event::{

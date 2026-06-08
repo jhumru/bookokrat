@@ -55,8 +55,13 @@ impl MemoryRegion {
             let path = generate_path(pattern);
             match Self::create_inner(&path, size, false, true) {
                 Ok(region) => return Ok(region),
-                Err(e) if e.raw_os_error() == Some(libc::EEXIST) => continue,
-                Err(e) => return Err(e),
+                Err(e) => {
+                    #[cfg(unix)]
+                    if e.raw_os_error() == Some(libc::EEXIST) {
+                        continue;
+                    }
+                    return Err(e);
+                }
             }
         }
 
@@ -105,6 +110,7 @@ impl MemoryRegion {
     ///
     /// After unlinking, no new processes can open this region, but existing
     /// mappings remain valid until unmapped.
+    #[cfg(unix)]
     pub fn unlink(&self) -> io::Result<()> {
         let c_path = CString::new(self.path.as_str())
             .map_err(|_| Error::new(ErrorKind::InvalidInput, "path contains null byte"))?;
@@ -113,6 +119,11 @@ impl MemoryRegion {
             return Err(Error::last_os_error());
         }
 
+        Ok(())
+    }
+
+    #[cfg(not(unix))]
+    pub fn unlink(&self) -> io::Result<()> {
         Ok(())
     }
 
@@ -134,6 +145,7 @@ impl MemoryRegion {
         unsafe { std::slice::from_raw_parts_mut(self.ptr, self.size) }
     }
 
+    #[cfg(unix)]
     fn create_inner(
         path: &str,
         size: usize,
@@ -205,24 +217,40 @@ impl MemoryRegion {
             fd,
         })
     }
+
+    #[cfg(not(unix))]
+    fn create_inner(
+        _path: &str,
+        _size: usize,
+        _unlink_existing: bool,
+        _exclusive: bool,
+    ) -> io::Result<Self> {
+        Err(Error::new(
+            ErrorKind::Unsupported,
+            "shared memory not supported on this platform",
+        ))
+    }
 }
 
 impl Drop for MemoryRegion {
     fn drop(&mut self) {
-        // Unmap memory if pointer is valid
-        if !self.ptr.is_null() {
-            unsafe {
-                libc::munmap(self.ptr as *mut libc::c_void, self.size);
+        #[cfg(unix)]
+        {
+            // Unmap memory if pointer is valid
+            if !self.ptr.is_null() {
+                unsafe {
+                    libc::munmap(self.ptr as *mut libc::c_void, self.size);
+                }
+                self.ptr = ptr::null_mut();
             }
-            self.ptr = ptr::null_mut();
-        }
 
-        // Close file descriptor if open
-        if self.fd >= 0 {
-            unsafe {
-                libc::close(self.fd);
+            // Close file descriptor if open
+            if self.fd >= 0 {
+                unsafe {
+                    libc::close(self.fd);
+                }
+                self.fd = -1;
             }
-            self.fd = -1;
         }
 
         // Intentionally do NOT unlink - the terminal needs to read the data

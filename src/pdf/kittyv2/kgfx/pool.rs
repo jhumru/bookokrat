@@ -29,6 +29,7 @@ unsafe impl Send for PoolSlot {}
 unsafe impl Sync for PoolSlot {}
 
 impl PoolSlot {
+    #[cfg(unix)]
     /// Creates a new pool slot with the given path and size.
     fn create(path: &str, size: usize) -> io::Result<Self> {
         let c_path = CString::new(path)
@@ -89,6 +90,14 @@ impl PoolSlot {
         })
     }
 
+    #[cfg(not(unix))]
+    fn create(_path: &str, _size: usize) -> io::Result<Self> {
+        Err(Error::new(
+            ErrorKind::Unsupported,
+            "shared memory not supported on this platform",
+        ))
+    }
+
     /// Writes data to the slot.
     fn write(&mut self, data: &[u8]) -> io::Result<()> {
         if data.len() > self.size {
@@ -109,6 +118,7 @@ impl PoolSlot {
         Ok(())
     }
 
+    #[cfg(unix)]
     /// Unlinks the shared memory path.
     fn unlink(&self) {
         if let Ok(c_path) = CString::new(self.path.as_str()) {
@@ -117,28 +127,34 @@ impl PoolSlot {
             }
         }
     }
+
+    #[cfg(not(unix))]
+    fn unlink(&self) {}
 }
 
 impl Drop for PoolSlot {
     fn drop(&mut self) {
-        // Unmap memory
-        if !self.ptr.is_null() {
-            unsafe {
-                libc::munmap(self.ptr as *mut libc::c_void, self.size);
+        #[cfg(unix)]
+        {
+            // Unmap memory
+            if !self.ptr.is_null() {
+                unsafe {
+                    libc::munmap(self.ptr as *mut libc::c_void, self.size);
+                }
+                self.ptr = ptr::null_mut();
             }
-            self.ptr = ptr::null_mut();
-        }
 
-        // Close FD
-        if self.fd >= 0 {
-            unsafe {
-                libc::close(self.fd);
+            // Close FD
+            if self.fd >= 0 {
+                unsafe {
+                    libc::close(self.fd);
+                }
+                self.fd = -1;
             }
-            self.fd = -1;
-        }
 
-        // Unlink - pool owns these regions and must clean them up
-        self.unlink();
+            // Unlink - pool owns these regions and must clean them up
+            self.unlink();
+        }
     }
 }
 

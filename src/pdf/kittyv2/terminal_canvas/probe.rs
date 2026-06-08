@@ -1,6 +1,6 @@
+#[cfg(unix)]
 use std::ffi::CString;
 use std::io::{self, Read, Write};
-use std::os::unix::io::AsRawFd;
 use std::time::{Duration, Instant};
 
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
@@ -28,6 +28,7 @@ pub fn probe_capabilities() -> TransferMode {
     result
 }
 
+#[cfg(unix)]
 fn probe_shared_memory() -> io::Result<bool> {
     let mut region = MemoryRegion::create_with_pattern("probev2-*", 4)?;
     region.write(&[0, 0, 0, 255])?;
@@ -57,6 +58,12 @@ fn probe_shared_memory() -> io::Result<bool> {
     }
 }
 
+#[cfg(not(unix))]
+fn probe_shared_memory() -> io::Result<bool> {
+    Ok(false)
+}
+
+#[cfg(unix)]
 fn read_response_with_timeout(timeout: Duration) -> io::Result<Option<Response>> {
     let mut stdin = io::stdin();
     let fd = stdin.as_raw_fd();
@@ -96,4 +103,9 @@ fn read_response_with_timeout(timeout: Duration) -> io::Result<Option<Response>>
             return Ok(Some(response));
         }
     }
+}
+
+#[cfg(not(unix))]
+fn read_response_with_timeout(_timeout: Duration) -> io::Result<Option<Response>> {
+    Ok(None)
 }

@@ -255,6 +255,7 @@ impl Default for LifecycleTracker {
 }
 
 /// Unlinks a shared memory path.
+#[cfg(unix)]
 fn unlink_path(path: &str) {
     match CString::new(path) {
         Ok(c_path) => {
@@ -278,6 +279,11 @@ fn unlink_path(path: &str) {
             record_shm_unlink_error();
         }
     }
+}
+
+#[cfg(not(unix))]
+fn unlink_path(_path: &str) {
+    // No-op: shared memory not supported on this platform
 }
 
 /// Global lifecycle tracker instance.

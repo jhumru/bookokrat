@@ -35,7 +35,7 @@ jobs:
           LIBCLANG_PATH: "C:/msys64/mingw64/bin"
         run: |
           $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
-          cargo build --release --target x86_64-pc-windows-gnu
+          cargo build --release --target x86_64-pc-windows-gnu --features pdf
 
       - name: Package
         shell: pwsh
