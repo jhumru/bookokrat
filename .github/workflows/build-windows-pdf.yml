@@ -30,6 +30,9 @@ jobs:
 
       - name: Build (with PDF)
         shell: pwsh
+        env:
+          BINDGEN_EXTRA_CLANG_ARGS: "-target x86_64-pc-windows-gnu"
+          LIBCLANG_PATH: "C:/msys64/mingw64/bin"
         run: |
           $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
           cargo build --release --target x86_64-pc-windows-gnu
