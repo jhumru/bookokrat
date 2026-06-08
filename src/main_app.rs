@@ -672,7 +672,6 @@ impl App {
             None => BookManager::new(),
         };
 
-        #[cfg(feature = "pdf")]
         let (book_manager, startup_caps) = {
             let startup_caps = crate::terminal::detect_terminal_with_probe();
             let mut book_manager = book_manager;
