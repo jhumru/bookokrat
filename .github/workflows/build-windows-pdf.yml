@@ -1,0 +1,53 @@
+name: Build Windows (with PDF)
+
+on:
+  push:
+    branches:
+      - feat/isolate-build-code
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (GNU toolchain)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-gnu
+
+      - name: Install MSYS2 dependencies
+        shell: cmd
+        run: |
+          C:\msys64\msys2_shell.cmd -defterm -no-start -mingw64 -c "pacman -S --needed --noconfirm mingw-w64-x86_64-clang mingw-w64-x86_64-pkgconf"
+
+      - name: Build (with PDF)
+        shell: pwsh
+        env:
+          BINDGEN_EXTRA_CLANG_ARGS: "-target x86_64-pc-windows-gnu"
+          LIBCLANG_PATH: "C:/msys64/mingw64/bin"
+        run: |
+          $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
+          cargo build --release --target x86_64-pc-windows-gnu
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = (cargo metadata --format-version 1 --no-deps | ConvertFrom-Json).packages[0].version
+          $target = "x86_64-pc-windows-gnu"
+          $archive = "bookokrat-v${version}-${target}-pdf.zip"
+          Compress-Archive -Path "target\${target}\release\bookokrat.exe" -DestinationPath "${archive}"
+          Write-Output "archive=${archive}" >> $env:GITHUB_OUTPUT
+        id: package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bookokrat-windows-pdf
+          path: bookokrat-*.zip
