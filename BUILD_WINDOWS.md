@@ -180,3 +180,5 @@ Make sure all four tools from Step 3 verify correctly.  Also confirm
 | `PATH` | prepend `C:\msys64\mingw64\bin` and `C:\msys64\usr\bin` | Makes clang, pkgconf, make available |
 | `LIBCLANG_PATH` | `C:/msys64/mingw64/bin` | Points bindgen to `libclang.dll` |
 | `BINDGEN_EXTRA_CLANG_ARGS` | not needed with `+stable-gnu` | Only required when cross-compiling MSVC→GNU |
+
+
